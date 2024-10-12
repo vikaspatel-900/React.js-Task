@@ -1,55 +1,47 @@
 // src/components/Profile.js
-
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
-import EditProfile from './EditProfile';
-import ChangeHistory from './ChangeHistory';
-import './Compo.css'
+import './UsersList.css';
 
-const Profile = ({ user }) => {
+const Profile = ({ user, onEdit }) => {
   const { deleteUser } = useUser();
-  const [isEditing, setIsEditing] = useState(false);
-  const [showHistory, setShowHistory] = useState(false); // State for showing history
+  const [showHistory, setShowHistory] = useState(false);
 
-  const handleEditToggle = useCallback(() => {
-    setIsEditing((prev) => !prev);
-  }, []);
-
-  const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete ${user.name}'s profile?`)) {
-      deleteUser(user.id);
-    }
-  };
-
-  const toggleHistory = () => {
-    setShowHistory((prev) => !prev); // Toggle the history visibility
-  };
+  const toggleHistory = () => setShowHistory((prev) => !prev);
 
   return (
-    <div className="profile-container">
+    <div className="profile-card">
+      <div className="profile-pic">
+        <img src={user.profilePic} alt="Profile" />
+      </div>
+      <h3>{user.name}</h3>
+      <p><strong>Email:</strong> {user.email}</p>
+      <p><strong>Bio:</strong> {user.bio}</p>
 
-      {!isEditing ? (
-        <div className='data'>
-          <img src={user.profilePicture || 'https://via.placeholder.com/150'} alt="Profile" className="profile-picture" />
-          <p><strong>Name:</strong> {user.name}</p>
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>Bio:</strong> {user.bio}</p>
-          <div className='btn'>
-            <button onClick={handleEditToggle}>Edit Profile</button>
-            <button onClick={handleDelete} style={{ marginLeft: '10px', backgroundColor: 'red', color: 'white' }}>Delete Profile</button>
-            <button onClick={toggleHistory} style={{ marginLeft: '10px' }}>
-              {showHistory ? 'Hide Change History' : 'Show Change History'}
-            </button>
-          </div>
+      <div className='edit-delete-btn'>
+        <button onClick={() => onEdit(user)} className="btn edit-btn">
+        <i class="bi bi-pencil-square"></i>
+        </button>
+        <button onClick={() => deleteUser(user.id)} className="btn delete-btn">
+        <i class="bi bi-trash3"></i>
+        </button>
+      </div>
 
+      <button onClick={toggleHistory} className="btn history-btn">
+        {showHistory ? 'Hide History' : 'Show Changes History'}
+      </button>
 
-
-
-
-          {showHistory && <ChangeHistory history={user.history || []} />} {/* Pass user history */}
+      {showHistory && (
+        <div className="history">
+          <h4>Change History</h4>
+          <ul>
+            {user.history.length > 0 ? (
+              user.history.map((entry, index) => <li key={index}>{entry}</li>)
+            ) : (
+              <li>No changes made yet.</li>
+            )}
+          </ul>
         </div>
-      ) : (
-        <EditProfile toggleEdit={handleEditToggle} user={user} />
       )}
     </div>
   );

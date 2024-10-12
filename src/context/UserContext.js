@@ -1,25 +1,30 @@
 // src/context/UserContext.js
-
 import React, { createContext, useContext, useReducer } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
-// Define the initial state for the user context
+const UserContext = createContext();
+
 const initialState = {
   users: [],
 };
 
-// Create a UserContext
-const UserContext = createContext();
-
-// User reducer to handle state updates
 const userReducer = (state, action) => {
   switch (action.type) {
     case 'ADD_USER':
-      return { ...state, users: [...state.users, action.payload] };
+      return {
+        ...state,
+        users: [...state.users, { ...action.payload, history: [] }],
+      };
     case 'UPDATE_USER':
       return {
         ...state,
-        users: state.users.map((user) => 
-          user.id === action.payload.id ? { ...user, ...action.payload } : user
+        users: state.users.map((user) =>
+          user.id === action.payload.id
+            ? {
+                ...action.payload,
+                history: [...user.history, `Updated on ${new Date().toLocaleString()}`],
+              }
+            : user
         ),
       };
     case 'DELETE_USER':
@@ -32,42 +37,21 @@ const userReducer = (state, action) => {
   }
 };
 
-// Create a UserProvider component
 export const UserProvider = ({ children }) => {
   const [state, dispatch] = useReducer(userReducer, initialState);
 
-  const addUser = (user) => {
-    dispatch({ type: 'ADD_USER', payload: user });
-  };
+  const addUser = (user) =>
+    dispatch({ type: 'ADD_USER', payload: { ...user, id: uuidv4() } });
 
-  const updateUser = (updatedUser) => {
-    // Push the change to history before updating
-    const user = state.users.find(u => u.id === updatedUser.id);
-    if (user) {
-      const historyEntry = {
-        date: new Date().toLocaleString(),
-        field: 'Profile', // You can adjust this based on the edited field
-        oldValue: JSON.stringify({ name: user.name, email: user.email, bio: user.bio }),
-        newValue: JSON.stringify({ name: updatedUser.name, email: updatedUser.email, bio: updatedUser.bio }),
-      };
-      updatedUser.history = [...(user.history || []), historyEntry]; // Append new history entry
-    }
+  const updateUser = (user) => dispatch({ type: 'UPDATE_USER', payload: user });
 
-    dispatch({ type: 'UPDATE_USER', payload: updatedUser });
-  };
-
-  const deleteUser = (id) => {
-    dispatch({ type: 'DELETE_USER', payload: id });
-  };
+  const deleteUser = (id) => dispatch({ type: 'DELETE_USER', payload: id });
 
   return (
-    <UserContext.Provider value={{ users: state.users, addUser, updateUser, deleteUser }}>
+    <UserContext.Provider value={{ ...state, addUser, updateUser, deleteUser }}>
       {children}
     </UserContext.Provider>
   );
 };
 
-// Custom hook to use the UserContext
-export const useUser = () => {
-  return useContext(UserContext);
-};
+export const useUser = () => useContext(UserContext);
